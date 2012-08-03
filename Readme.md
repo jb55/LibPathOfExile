@@ -30,7 +30,7 @@ using (var fs = ggpk.GetStream()) {
 
 ### Explore directory tree
 
-```
+```cs
 public static void PrintTree(TreeNode node, string path) {
 	if (node.IsFileNode) {
 		var fileNode = node.FileNode;
