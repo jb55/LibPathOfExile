@@ -13,6 +13,15 @@ var ggpk = new GGPKFile();
 ggpk.Dump("dump/to/path");
 ```
 
+### Dump subtree
+var ggpk = new GGPKFile();
+
+var skillIcons =	(from dir in ggpk.Nodes.OfType<DirectoryNode>()
+									where dir.Name == "SkillIcons"
+									select ggpk.NodeToTreeNode(dir)).First();
+
+ggpk.DumpTreeNode(skillIcons, "tmp");
+
 ### Export all csvs
 
 ```cs

@@ -51,6 +51,12 @@ namespace PathOfExile.GGPK
       stream.Seek(original, SeekOrigin.Begin);
     }
 
+    public void DumpTreeNode(TreeNode n, string path, bool skipExisting = false) {
+      using (var fs = GetStream()) {
+        DumpTreeNode(fs, n, path, skipExisting);
+      }
+    }
+
     public static void DumpTreeNode(GGPKFileStream stream, TreeNode n, string path, bool skipExisting=false) {
       if (n.IsFileNode) {
         var fileNode = n.Element.Left;
@@ -82,6 +88,10 @@ namespace PathOfExile.GGPK
       return new GGPKFileStream(this);
     }
 
+    public TreeNode NodeToTreeNode(GGPKNode node) {
+      return NodeToTreeNode(node, this.OffsetsToNodes);
+    }
+
     public static TreeNode NodeToTreeNode(GGPKNode node, IDictionary<ulong, GGPKNode> offsets) {
         if (node is FileNode) {
           return new TreeNode { 
@@ -92,10 +102,6 @@ namespace PathOfExile.GGPK
           var dnode = node as DirectoryNode;
 
           var children = dnode.FileNodeEntries.Select(nodeEntry => {
-            var dn = dnode;
-            if (!offsets.Keys.Contains(nodeEntry.Offset)) {
-              throw new Exception("wat");
-            }
             var offset = offsets[nodeEntry.Offset];
             var newNode = NodeToTreeNode(offset, offsets);
             return newNode;
