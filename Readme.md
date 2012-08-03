@@ -18,9 +18,9 @@ ggpk.Dump("dump/to/path");
 ```cs
 var ggpk = new GGPKFile();
 
-var skillIcons =	(from dir in ggpk.Nodes.OfType<DirectoryNode>()
-									where dir.Name == "SkillIcons"
-									select ggpk.NodeToTreeNode(dir)).First();
+var skillIcons = (from dir in ggpk.Nodes.OfType<DirectoryNode>()
+                 where dir.Name == "SkillIcons"
+                 select ggpk.NodeToTreeNode(dir)).First();
 
 ggpk.DumpTreeNode(skillIcons, "tmp");
 ```
@@ -32,11 +32,11 @@ var ggpk = new GGPKFile();
 var fileNodes = ggpk.Nodes.OfType<FileNode>();
 
 using (var fs = ggpk.GetStream()) {
-	foreach (var fileNode in fileNodes) {
-		if (fileNode.FileName.EndsWith(".csv")) {
-			fileNode.SaveAs(fs, ".");
-		}
-	}
+  foreach (var fileNode in fileNodes) {
+    if (fileNode.FileName.EndsWith(".csv")) {
+      fileNode.SaveAs(fs, ".");
+    }
+  }
 }
 ```
 
@@ -44,17 +44,17 @@ using (var fs = ggpk.GetStream()) {
 
 ```cs
 public static void PrintTree(TreeNode node, string path) {
-	if (node.IsFileNode) {
-		var fileNode = node.FileNode;
-		var filePath = Path.Combine(path, fileNode.FileName);
-		Console.WriteLine(filePath);
-	} else if (node.IsDirectoryTreeNode) {
-		var dirNode = node.DirectoryTreeNode;
-		var subPath = Path.Combine(path, dirNode.Node.Name);
-		foreach (var child in dirNode.Children) {
-			PrintTree(child, subPath);
-		}
-	}
+  if (node.IsFileNode) {
+    var fileNode = node.FileNode;
+    var filePath = Path.Combine(path, fileNode.FileName);
+    Console.WriteLine(filePath);
+  } else if (node.IsDirectoryTreeNode) {
+    var dirNode = node.DirectoryTreeNode;
+    var subPath = Path.Combine(path, dirNode.Node.Name);
+    foreach (var child in dirNode.Children) {
+      PrintTree(child, subPath);
+    }
+  }
 }
 
 var ggpk = new GGPKFile();
