@@ -34,11 +34,11 @@ using (var fs = ggpk.GetStream()) {
 public static void PrintTree(TreeNode node, string path) {
 	if (node.IsFileNode) {
 		var fileNode = node.FileNode;
-    var filePath = Path.Combine(path, fileNode.FileName);
+		var filePath = Path.Combine(path, fileNode.FileName);
 		Console.WriteLine(filePath);
 	} else if (node.IsDirectoryTreeNode) {
 		var dirNode = node.DirectoryTreeNode;
-    var subPath = Path.Combine(path, dirNode.Node.Name);
+		var subPath = Path.Combine(path, dirNode.Node.Name);
 		foreach (var child in dirNode.Children) {
 			PrintTree(child, subPath);
 		}
