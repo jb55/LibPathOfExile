@@ -14,6 +14,8 @@ ggpk.Dump("dump/to/path");
 ```
 
 ### Dump subtree
+
+```cs
 var ggpk = new GGPKFile();
 
 var skillIcons =	(from dir in ggpk.Nodes.OfType<DirectoryNode>()
@@ -21,6 +23,7 @@ var skillIcons =	(from dir in ggpk.Nodes.OfType<DirectoryNode>()
 									select ggpk.NodeToTreeNode(dir)).First();
 
 ggpk.DumpTreeNode(skillIcons, "tmp");
+```
 
 ### Export all csvs
 
