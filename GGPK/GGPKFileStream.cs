@@ -14,10 +14,10 @@ namespace PathOfExile.GGPK
       Stream = new FileStream(file.FilePath, FileMode.Open);
     }
 
-    public void Dispose() {
+    protected override void Dispose(bool disposing) {
       Stream.Dispose();
     }
-  
+
     public override bool  CanRead {
     	get { return Stream.CanRead; }
     }

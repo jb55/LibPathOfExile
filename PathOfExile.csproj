@@ -40,11 +40,16 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="GGPK\GGPKDirectoryTree.cs" />
+    <Compile Include="GGPK\DirectoryNode.cs" />
+    <Compile Include="GGPK\DirectoryTree.cs" />
+    <Compile Include="GGPK\FileNode.cs" />
     <Compile Include="GGPK\GGPKFile.cs" />
     <Compile Include="GGPK\GGPKFileStream.cs" />
     <Compile Include="GGPK\GGPKNode.cs" />
+    <Compile Include="GGPK\HeaderNode.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Util\Either.cs" />
+    <Compile Include="Util\Log.cs" />
     <Compile Include="Util\Maybe.cs" />
     <Compile Include="Util\StreamExtensions.cs" />
   </ItemGroup>

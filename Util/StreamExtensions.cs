@@ -12,10 +12,12 @@ namespace PathOfExile.Util
       return stream.Seek(len, SeekOrigin.Current);
     }
 
-    public static string ReadGGPKString(this BinaryReader reader) {
-      var size  = reader.ReadInt32();
-      var bytes = reader.ReadBytes(size);
-      return Encoding.Unicode.GetString(bytes);
+    public static string ReadGGPKString(this BinaryReader reader, int len) {
+      len = (len - 1) * 2;
+      var name = Encoding.Unicode.GetString(reader.ReadBytes(len));
+      // skip the null terminator
+      reader.BaseStream.Skip(2);
+      return name;
     }
   }
 }

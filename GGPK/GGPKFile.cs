@@ -14,6 +14,7 @@ namespace PathOfExile.GGPK
     public string FilePath { get; private set; }
     public HeaderNode Header { get; private set; }
     public IEnumerable<GGPKNode> Nodes { get; private set; }
+    private IDictionary<ulong, GGPKNode> OffsetsToNodes = new Dictionary<ulong, GGPKNode>();
 
     public GGPKFile(string path=null, bool autoload=true) {
       if (path == null) {
@@ -27,54 +28,14 @@ namespace PathOfExile.GGPK
         Load();
     }
 
-    private static FileNodeEntry ParseFileNodeEntry(BinaryReader reader) {
-      var unk = reader.ReadBytes(4);
-      var offset = reader.ReadUInt32();
-
-      return new FileNodeEntry {
-        Unknown = unk,
-        Offset = offset,
-      };
-    }
-
-    private static FileNode ParseDirectoryNode(BinaryReader reader) {
-      return null;
-
-//    var entries = Enumerable.Range(1, numEntries)
-//                            .Select(n => ParseFileNodeEntry(reader))
-//                            .ToArray();
-    }
-
-    private static FileNode ParseFileNode(long size, BinaryReader reader) {
-      var offset = reader.BaseStream.Position;
-
-      var fileNameLen = (reader.ReadInt32() - 1) * 2;
-      var hash = reader.ReadBytes(32);
-      var fileName = Encoding.Unicode.GetString(reader.ReadBytes(fileNameLen));
-
-      // skip the null terminator
-      reader.BaseStream.Skip(2);
-
-      var dataOffset = reader.BaseStream.Position;
-      var nonDataLen = dataOffset - offset;
-      var remaining = size - nonDataLen;
-
-      return new FileNode {
-        FileName = fileName,
-        SHA256 = hash,
-        DataSize = remaining,
-        DataOffset = dataOffset,
-      };
-    }
-
-    public static void ExportFileNode(GGPKFileStream source, FileNode fileNode, string outPath, string fileName=null) {
-      var srcReader = new BinaryReader(source);
-      var original = source.Position;
+    public static void ExportFileNode(GGPKFileStream stream, FileNode fileNode, string outPath, string fileName=null) {
+      var srcReader = new BinaryReader(stream);
+      var original = stream.Position;
       var size = (int)fileNode.DataSize;
       var dir = Path.GetDirectoryName(outPath);
       var fullPath = Path.Combine(dir, fileName ?? fileNode.FileName);
 
-      source.Seek(fileNode.DataOffset, SeekOrigin.Begin);
+      stream.Seek(fileNode.DataOffset, SeekOrigin.Begin);
 
       if (dir != "")
         Directory.CreateDirectory(dir);
@@ -86,66 +47,98 @@ namespace PathOfExile.GGPK
           }
         }
 
-      source.Seek(original, SeekOrigin.Begin);
+      stream.Seek(original, SeekOrigin.Begin);
     }
 
-    private static HeaderNode ParseHeaderNode(BinaryReader reader) {
-      var numOffsets = reader.ReadUInt32();
-      var offsets = new ulong[numOffsets];
-
-      for (var i = 0; i < numOffsets; ++i) {
-        offsets[i] = reader.ReadUInt64();
+    public static void DumpTreeNode(GGPKFileStream stream, TreeNode n, string path, bool skipExisting=false) {
+      if (n.IsFileNode) {
+        var fileNode = n.Element.Left;
+        var filePath = Path.Combine(path, fileNode.FileName);
+        if (skipExisting && File.Exists(filePath))
+          return;
+        ExportFileNode(stream, n.Element.Left, filePath);
       }
+      else if (n.IsDirectoryTreeNode) {
+        var dir = n.Element.Right;
+        var subPath = Path.Combine(path, dir.Node.Name);
+        Directory.CreateDirectory(subPath);
 
-      return new HeaderNode {
-        FileOffsets = offsets
-      };
+        foreach (var child in dir.Children) {
+          DumpTreeNode(stream, child, subPath, skipExisting);
+        }
+      }
+    }
+
+    public void Dump(string path, bool skipExisting=false) {
+      var tree = GetDirectoryTree();
+
+      using (var stream = GetStream()) {
+        DumpTreeNode(stream, tree, path, skipExisting);
+      }
     }
 
     public GGPKFileStream GetStream() {
       return new GGPKFileStream(this);
     }
 
-    public static Maybe<T> ParseSpecificNode<T>(BinaryReader reader) where T : GGPKNode {
-      return ParseNode(reader).As<GGPKNode, T>();
+    public static TreeNode NodeToTreeNode(GGPKNode node, IDictionary<ulong, GGPKNode> offsets) {
+        if (node is FileNode) {
+          return new TreeNode { 
+            Element = (node as FileNode).ToLeft<FileNode, DirectoryTreeNode>()
+          };
+        }
+        else if (node is DirectoryNode) {
+          var dnode = node as DirectoryNode;
+
+          var children = dnode.FileNodeEntries.Select(nodeEntry => {
+            var dn = dnode;
+            if (!offsets.Keys.Contains(nodeEntry.Offset)) {
+              throw new Exception("wat");
+            }
+            var offset = offsets[nodeEntry.Offset];
+            var newNode = NodeToTreeNode(offset, offsets);
+            return newNode;
+          }).Where(tn => tn != null);
+
+          return new TreeNode {
+            Element = new DirectoryTreeNode {
+              Node = dnode,
+              Children = children
+            }.ToRight<FileNode, DirectoryTreeNode>()
+          };
+        }
+
+        return null;
     }
 
-    public static Maybe<GGPKNode> ParseNode(BinaryReader reader) {
-      var startPos = reader.BaseStream.Position;
-      var len = reader.ReadUInt32();
-      var tag = ASCIIEncoding.ASCII.GetString(reader.ReadBytes(4));
+    public TreeNode GetDirectoryTree() {
+      return BuildDirectoryTree(Nodes, OffsetsToNodes);
+    }
 
-      GGPKNode node = null;
-
-      switch (tag) {
-        case "GGPK": node = ParseHeaderNode(reader); break;
-        case "FILE": node = ParseFileNode(len - 8, reader); break;
+    private static TreeNode BuildDirectoryTree(IEnumerable<GGPKNode> nodes, IDictionary<ulong, GGPKNode> offsets) {
+      foreach (var node in nodes.OfType<DirectoryNode>()) {
+        if (node.Name == "")
+          return NodeToTreeNode(node, offsets);
       }
-
-      reader.BaseStream.Seek(startPos + len, SeekOrigin.Begin);
-      return node.ToMaybe();
-    }
-
-    public static bool IsValidMagicCode(string code) {
-      return code == "GGPK";
-    }
-
-    public static bool IsValidMagicCode(byte[] code) {
-      return IsValidMagicCode(ASCIIEncoding.ASCII.GetString(code));
+      return null;
     }
 
     public void Load(BinaryReader reader = null) {
       using (reader = reader ?? new BinaryReader(new FileStream(FilePath, FileMode.Open))) {
 
-        var maybeHeader = ParseSpecificNode<HeaderNode>(reader);
-        Header = maybeHeader.FromMaybe(() => new Exception("Could not parse header, invalid format"));
+        var maybeHeader = GGPKNode.ParseSpecificNode<HeaderNode>(reader);
+        Header = maybeHeader.FromEither(() => new Exception("Could not parse header, invalid format"));
 
         var nodes = new List<GGPKNode>();
         while (reader.BaseStream.Position != reader.BaseStream.Length) {
-          var maybeNode = ParseSpecificNode<FileNode>(reader);
-          if (maybeNode.HasValue) {
-            nodes.Add(maybeNode.Value);
-          }
+          var eitherNode = GGPKNode.Parse(reader);
+
+          eitherNode.Run(node => {
+            if (node is FileNode || node is DirectoryNode)
+              OffsetsToNodes[node.Offset] = node;
+
+            nodes.Add(node);
+          });
         }
 
         Nodes = nodes;
