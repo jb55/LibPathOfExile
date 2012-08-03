@@ -5,6 +5,7 @@ using System.Text;
 using System.IO;
 using PathOfExile.Util;
 using Data.Maybe;
+using System.Diagnostics;
 
 namespace PathOfExile.GGPK
 {

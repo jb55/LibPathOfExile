@@ -16,5 +16,7 @@ namespace PathOfExile.GGPK
 
     public bool IsFileNode { get { return Element.IsLeft; } }
     public bool IsDirectoryTreeNode { get { return Element.IsRight; } }
+    public FileNode FileNode { get { return Element.Left; } }
+    public DirectoryTreeNode DirectoryTreeNode { get { return Element.Right; } }
   }
 }
