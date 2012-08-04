@@ -49,7 +49,6 @@
     <Compile Include="GGPK\HeaderNode.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Util\Either.cs" />
-    <Compile Include="Util\Log.cs" />
     <Compile Include="Util\Maybe.cs" />
     <Compile Include="Util\StreamExtensions.cs" />
   </ItemGroup>
