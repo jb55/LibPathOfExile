@@ -1,7 +1,7 @@
 
 # LibPathOfExile
 
-Tools for parsing Path of Exile's GGPK files and the data files contained therein
+Tools for parsing Path of Exile's GGPK files and the data files contained therein.
 
 WIP
 
